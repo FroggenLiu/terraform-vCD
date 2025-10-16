@@ -17,14 +17,10 @@ variable "org_vdcs" {
     allocation_model 	= string
     cpu_guaranteed		= optional(number, 1.0)
     mem_guaranteed		= optional(number, 1.0)
-    compute_capacity  = optional(object({
-      cpu = object({
-        limit = number
-      })
-      memory = object({
-        limit = number
-      })
-    }))
+    compute_capacity  = object({
+      cpu = object({ limit = number })
+      memory = object({ limit = number })
+    })
     storage_profile		= optional(object({
       name		= string
       limit 	= number
@@ -34,5 +30,10 @@ variable "org_vdcs" {
       limit	  = 0
       default	= true
 		})
+    custom_roles = optional(list(object({
+      name        = string
+      description = string
+      right      = optional(list(string), [])
+    })), [])
 	}))
 }

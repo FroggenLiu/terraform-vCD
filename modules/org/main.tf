@@ -2,7 +2,7 @@ terraform {
   required_providers {
     vcd = {
       source  = "vmware/vcd"
-      version = "~> 3.14.0"
+      version = "3.14.0"
     }
   }
 }
@@ -46,10 +46,10 @@ resource "vcd_org_vdc" "vdc" {
   provider_vdc_name = each.value.provider_vdc_name
   compute_capacity {
     cpu {
-      limit = try(each.value.compute_capacity.cpu)
+      limit = each.value.compute_capacity.cpu.limit
     }
     memory {
-      limit = try(each.value.compute_capacity.memory)
+      limit = each.value.compute_capacity.memory.limit
     }
   }
   storage_profile {
@@ -58,7 +58,7 @@ resource "vcd_org_vdc" "vdc" {
     default = each.value.storage_profile.default
   }
 
-    depends_on = [
+  depends_on = [
     vcd_org.this
   ]
 }
@@ -68,17 +68,13 @@ resource "vcd_role" "custom" {
     for vdc in var.org_vdcs : vdc.name => vdc
     if length(vdc.custom_roles) > 0
   }
-  
+
+  org         = vcd_org.this.name
   name        = each.value.custom_roles[0].name
   description = each.value.custom_roles[0].description
-  org         = vcd_org.this.name
-  vdc         = each.value.name
-
-  excluded_right = "Organization vDC Network: Edit Properties"
-  base_rights = data.vcd_rights_bundle.base_bundle[each.key].rights
 
   rights = tolist(setsubtract(
-    toset(base_rights),
-    toset([excluded_right])
+    toset(data.vcd_rights_bundle.base_bundle[each.key].rights),
+    toset(try(each.value.custom_roles[0].right, []))
   ))
 }

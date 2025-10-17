@@ -12,7 +12,10 @@ data "vcd_rights_bundle" "base_bundle" {
     for vdc in var.org_vdcs : vdc.name => vdc
     if length(vdc.custom_roles) > 0
   }
+  org  = vcd_org.this.name
   name = "Organization Administrator"
+  
+  depends_on = [vcd_org.this]
 }
 
 resource "vcd_org" "this" {
@@ -77,4 +80,6 @@ resource "vcd_role" "custom" {
     toset(data.vcd_rights_bundle.base_bundle[each.key].rights),
     toset(try(each.value.custom_roles[0].right, []))
   ))
+  
+  depends_on = [vcd_org.this, data.vcd_rights_bundle.base_bundle]
 }

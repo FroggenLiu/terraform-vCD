@@ -7,18 +7,38 @@ terraform {
   }
 }
 
-data "vcd_rights_bundle" "base_bundle" {
-  for_each = {
-    for vdc in var.org_vdcs : vdc.name => vdc
-    if length(vdc.custom_roles) > 0
-  }
+data "vcd_role" "org_admin" {
+  org  = vcd_org.this.name
   name = "Organization Administrator"
+
+  depends_on = [
+    vcd_org.this
+  ]
 }
 
 resource "vcd_org" "this" {
   name        = var.org_name
   full_name   = var.org_full_name
   is_enabled  = true
+}
+
+# Org-level custom role: Org Admin rights minus one
+resource "vcd_role" "tenant_admin" {
+  org         = vcd_org.this.name
+  name        = "Tenant Admin"
+  description = "Tenant Admin"
+
+  rights = tolist(setsubtract(
+    toset(data.vcd_role.org_admin.rights),
+    toset([
+      "Organization vDC Network: Edit Properties"
+    ])
+  ))
+
+  depends_on = [
+    vcd_org.this,
+    data.vcd_role.org_admin
+  ]
 }
 
 resource "vcd_org_user" "users" {
@@ -32,8 +52,9 @@ resource "vcd_org_user" "users" {
   email_address = each.value.email_address
   enabled       = true
 
-  depends_on    = [
-    vcd_org.this
+  depends_on = [
+    vcd_org.this,
+    vcd_role.tenant_admin
   ]
 }
 
@@ -44,6 +65,7 @@ resource "vcd_org_vdc" "vdc" {
   name              = each.value.name
   allocation_model  = each.value.allocation_model
   provider_vdc_name = each.value.provider_vdc_name
+  enable_thin_provisioning = each.value.enable_thin_provisioning
   compute_capacity {
     cpu {
       limit = each.value.compute_capacity.cpu.limit
@@ -59,22 +81,7 @@ resource "vcd_org_vdc" "vdc" {
   }
 
   depends_on = [
-    vcd_org.this
+    vcd_org.this,
+    vcd_org_user.users
   ]
-}
-
-resource "vcd_role" "custom" {
-  for_each = {
-    for vdc in var.org_vdcs : vdc.name => vdc
-    if length(vdc.custom_roles) > 0
-  }
-
-  org         = vcd_org.this.name
-  name        = each.value.custom_roles[0].name
-  description = each.value.custom_roles[0].description
-
-  rights = tolist(setsubtract(
-    toset(data.vcd_rights_bundle.base_bundle[each.key].rights),
-    toset(try(each.value.custom_roles[0].right, []))
-  ))
 }

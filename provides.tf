@@ -8,9 +8,9 @@ terraform {
 }
 
 provider "vcd" {
-  url                  = var.vcd_url
-  user                 = var.vcd_user
-  password             = var.vcd_password
-  org                  = var.vcd_org
+  url                  = "https://vcd/api"
+  user                 = "administrator"
+  password             = "password"
+  org                  = "System"
   allow_unverified_ssl = true
 }

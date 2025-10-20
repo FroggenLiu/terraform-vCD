@@ -17,6 +17,7 @@ variable "org_vdcs" {
     allocation_model 	= string
     cpu_guaranteed		= optional(number, 1.0)
     mem_guaranteed		= optional(number, 1.0)
+    enable_thin_provisioning = optional(bool, true)
     compute_capacity  = object({
       cpu = object({ limit = number })
       memory = object({ limit = number })
@@ -33,7 +34,7 @@ variable "org_vdcs" {
     custom_roles = optional(list(object({
       name        = string
       description = string
-      right      = optional(list(string), [])
+      right       = optional(list(string), [])
     })), [])
 	}))
 }

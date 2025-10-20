@@ -1,6 +1,5 @@
 variable "vcd_url" { type = string }
 variable "vcd_org" { type = string }
-variable "vcd_vdc" { type = string}
 variable "vcd_user" { type = string }
 variable "vcd_password" {
   type = string
@@ -16,6 +15,7 @@ variable "orgs" {
     allocation_model 	= string
     cpu_guaranteed    = optional(number, 1.0)
     mem_guaranteed    = optional(number, 1.0)
+    enable_thin_provisioning = optional(bool, true)
     compute_capacity  = optional(object({
       cpu = object({
         limit = number
@@ -23,6 +23,7 @@ variable "orgs" {
       memory = object({
         limit = number
       })
+      enable_thin_provisioning = optional(bool, true)
     }))
     storage_profile   = optional(object({
       name    = string

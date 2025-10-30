@@ -10,14 +10,14 @@ terraform apply tfplan
 
 ## reset stat
 ```shell
-terraform stat list
+terraform state list
 terraform plan -refresh-only
 terraform destroy -auto-approve
 ```
 
 ## remove the working dir cache
 ```shell
-rm -f ./terraform
-rm -f ./terraform.lock.hcl
+rm -rf .terraform
+rm -f .terraform.lock.hcl
 terraform init -upgrade
 ```

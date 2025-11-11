@@ -106,7 +106,7 @@ resource "vcd_org_user" "users" {
 }
 
 ######################################
-# Creat a T1 gateway for vDC from VCD.
+# 5. Create a T1 gateway for vDC from VCD.
 ######################################
 data "vcd_external_network_v2" "ext_net" {
   name = var.external_network_name
@@ -128,7 +128,7 @@ resource "vcd_nsxt_edgegateway" "t1" {
 }
 
 ######################################
-# 5. Creat a network(segment).  NSX-T backend routed Org VDC network
+# 6. Create a network(segment).  NSX-T backend routed Org VDC network
 ######################################
 resource "vcd_network_routed_v2" "routed_seg" {
   for_each = { for v in var.org_vdcs : v.name => v }
@@ -152,7 +152,41 @@ resource "vcd_network_routed_v2" "routed_seg" {
   ]
 }
 
+######################################
+# 7. Create a vAPPs and attach segment
+######################################
+resource "vcd_vapp" "vapp" {
+  for_each = { for v in var.org_vdcs : v.name => v }
 
+  org         = var.org_name
+  vdc         = vcd_org_vdc.vdc[each.key].name
+  name        = "${var.org_name}-vAPP"
+  description = "provisioned by terraform"
+  power_on    = true
+  lease       {
+    # How long any of the VMs in the vApp can run before the vApp is automatically powered off or suspended. 0 means never expires
+    runtime_lease_in_sec  = 0
+    # How long the vApp is available before being automatically deleted or marked as expired. 0 means never expires
+    storage_lease_in_sec  = 0
+  }
+
+    depends_on = [
+    vcd_org_vdc.vdc
+  ]
+}
+
+resource "vcd_vapp_org_network" "vapp_network" {
+  for_each = { for v in var.org_vdcs : v.name => v }
+
+  org               = var.org_name
+  vdc               = vcd_org_vdc.vdc[each.key].name
+  vapp_name         = vcd_vapp.vapp[each.key].name
+  org_network_name  = vcd_network_routed_v2.routed_seg[each.key].name
+
+  depends_on = [
+    vcd_vapp.vapp
+  ]
+}
 
 
 

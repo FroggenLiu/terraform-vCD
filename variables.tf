@@ -1,3 +1,4 @@
+# ---- vCD connection ----
 variable "vcd_url" { type = string }
 variable "vcd_org" { type = string }
 variable "vcd_user" { type = string }
@@ -6,13 +7,41 @@ variable "vcd_password" {
   sensitive   = true
 }
 
+# ---- NSX-T connection ----
+variable "nsxt_host" { type = string }
+variable "nsxt_username" { type = string }
+variable "nsxt_password" {
+  type      = string
+  sensitive = true
+}
+
+## ---- VCD T1 / segment ----
+variable "segment_start_ip_addr" {
+  type        = string
+  description = "Enter segment start ip address. (e.g., 10.1.1.1)"
+}
+variable "segment_end_ip_addr" {
+  type        = string
+  description = "Enter segment end ip address, exclude gateway ip. (e.g., 10.1.1.253)"
+}
+variable "segment_gateway_cidr" {
+  type        = string
+  description = "Enter segment gateway in CIDR format. (e.g., 10.1.1.254/24)"
+  validation {
+    condition     = can(regex("\\/", var.segment_gateway_cidr))
+    error_message = "gateway_cidr must include CIDR (e.g., 10.1.1.254/24)"
+  }
+}
+
 variable "orgs" {
   type = map(object({
   full_name = string
   vdcs      = list(object({
-    name              = string		
+    name              = string
     provider_vdc_name = string
-    allocation_model 	= string
+    network_pool_name = optional(string, "ip-pool") #fields depending on your environment
+    network_quota     = optional(number, 3)
+    allocation_model  = string
     cpu_guaranteed    = optional(number, 1.0)
     mem_guaranteed    = optional(number, 1.0)
     enable_thin_provisioning = optional(bool, true)
@@ -30,8 +59,8 @@ variable "orgs" {
       limit   = number
       default = bool
       }), {
-        name	  = "tf-vsan-raid5"
-        limit	  = 0
+        name    = "vsan"  #fields depending on your environment
+        limit   = 0
         default = true
       })
   }))
@@ -40,7 +69,7 @@ variable "orgs" {
       description  = string
       right        = list(string)
   })), [])
-    users	= list(object({
+    users = list(object({
       name          = string
       password      = string
       role          = string
@@ -50,3 +79,17 @@ variable "orgs" {
   }))
 }
 
+#variable "segment_gateway_dns1" {
+#  type    = string
+#  default = "10.160.1.9"
+#}
+#variable "segment_gateway_dns2" {
+#  type    = string
+#  default = "10.160.128.9"
+#}
+
+## ---- T0 / segment ----
+#variable "t0_name" { type = string}
+#variable "edge_cluster_name" { type = string }
+#variable "overlay_transport_zone_name" { type = string }
+#variable "user_cidr" { type = string }

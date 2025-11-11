@@ -20,10 +20,10 @@ root
 └── .terrform.d
     └── plugins
         └── registry.terraform.io
-            └── vmware //put providers under here
-                ├──nsxt //this is provider nsxt
-                │  └── 3.14.0 //version
-                │      └── linux_amd64 //platform
+            └── vmware ## put providers under here
+                ├──nsxt ## this is provider nsxt
+                │  └── 3.14.0 ## version
+                │      └── linux_amd64 ## platform
                 │          ├── CHANGELOG.md
                 │          ├── LICENSE
                 │          ├── README.md
@@ -57,6 +57,6 @@ terraform destroy -auto-approve
 
 ## Remove the working dir cache
 ```shell
-rm -rf': rm -rf .terraform/ .terraform.lock.hcl terraform.tfstate 1111 terraform.tfstate.backup
+rm -rf .terraform/ .terraform.lock.hcl terraform.tfstate 1111 terraform.tfstate.backup
 terraform init -upgrade
 ```

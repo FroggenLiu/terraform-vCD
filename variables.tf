@@ -19,19 +19,31 @@ variable "nsxt_password" {
 variable "segment_start_ip_addr" {
   type        = string
   description = "Enter segment start ip address. (e.g., 10.1.1.1)"
+  validation {
+    condition     = can(regex("^(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\\.(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\\.(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\\.(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])$", var.segment_start_ip_addr))
+    error_message = "The IP address must be in the format 'x.x.x.x' (e.g., 192.168.1.10)."
+  }
 }
+
 variable "segment_end_ip_addr" {
   type        = string
   description = "Enter segment end ip address, exclude gateway ip. (e.g., 10.1.1.253)"
+  validation {
+    condition     = can(regex("^(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\\.(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\\.(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\\.(25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])$", var.segment_end_ip_addr))
+    error_message = "The IP address must be in the format 'x.x.x.x' (e.g., 192.168.1.10)."
+  }
 }
+
 variable "segment_gateway_cidr" {
   type        = string
   description = "Enter segment gateway in CIDR format. (e.g., 10.1.1.254/24)"
   validation {
-    condition     = can(regex("\\/", var.segment_gateway_cidr))
-    error_message = "gateway_cidr must include CIDR (e.g., 10.1.1.254/24)"
+    condition     = can(regex(
+      "^(?:(?:25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\\.(?:25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\\.(?:25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9])\\.(?:25[0-5]|2[0-4][0-9]|1[0-9]{2}|[1-9]?[0-9]))/(3[0-2]|[12]?[0-9])$", var.segment_gateway_cidr))
+    error_message = "The value must be a valid IPv4 CIDR (e.g., 10.1.1.254/24)"
   }
 }
+
 
 variable "orgs" {
   type = map(object({

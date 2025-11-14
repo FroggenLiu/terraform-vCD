@@ -23,8 +23,10 @@ provider_installation {
     path    = "/root/.terraform.d/plugins"
   }
   direct {
-    exclude = ["vmware/vcd"]
-    exclude = ["vmware/nsxt"]
+    exclude = [
+        "registry.terraform.io/vmware/vcd",
+        "registry.terraform.io/vmware/nsxt"
+    ]
   }
 }
 

@@ -156,17 +156,12 @@ resource "vcd_network_routed_v2" "overlay_seg" {
   ]
 }
 
-
-######################################
-# 6-2. Creat a network(VLAN segment) from NSX
-######################################
 ######################################
 # 6-2. Creat a network(VLAN segment) from NSX
 ######################################
 data "nsxt_policy_transport_zone" "vlan_tz" {
   display_name  = var.vlan_transport_zone_name
 }
-
 
 resource "nsxt_policy_vlan_segment" "vlan_seg"{
   for_each  = var.segment_type == "vlan" ? { for v in var.org_vdcs : v.name => v } : {}
@@ -185,7 +180,6 @@ resource "nsxt_policy_vlan_segment" "vlan_seg"{
     data.nsxt_policy_transport_zone.vlan_tz,
   ]
 }
-
 
 ######################################
 # 6-2-1. bind vlan segment to T1 interface
@@ -256,7 +250,6 @@ resource "time_sleep" "wait_for_vcd_sync_vlan_segment" {
   ]
 }
 
-
 ######################################
 # 7. Creat a vAPPs and attach to orgVdcNetwork
 ######################################
@@ -303,6 +296,7 @@ resource "time_sleep" "wait_for_vcd_sync_vdcOrgNetwork" {
     vcd_nsxt_network_imported.imported_seg
   ]
 }
+
 
 
 ######################################

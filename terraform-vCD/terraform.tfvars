@@ -9,6 +9,13 @@ nsxt_host = ""
 nsxt_username = ""
 nsxt_password = ""
 
+segment_start_ip_addr = ""
+segment_end_ip_addr = ""
+segment_gateway_cidr = ""
+segment_type  = ""
+segment_vlan_id = ""
+
+
 #t0_name = "tier-0"
 #edge_cluster_name = "edge-cluster"
 #overlay_transport_zone_name = "tz-overlay01"

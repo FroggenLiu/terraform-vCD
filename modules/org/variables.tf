@@ -14,31 +14,57 @@ variable "t0_name" {
   type    = string
   default = "tier-0" #fields depending on your environment
 }
+
 variable "edge_cluster_name" {
   type    = string
   default = "edge-cluster" #fields depending on your environment
 }
+
+variable "vlan_transport_zone_name" {
+  type    = string
+  default = "vlan_tz" #fields depending on your environment
+}
+
 variable "overlay_transport_zone_name" {
   type    = string
   default = "overlay_transport_zone" #fields depending on your environment
 }
+
+variable "overlay_transport_zone_name" {
+  type    = string
+  default = "overlay_tz"
+}
+
 variable "external_network_name" {
   type    = string
   default = "external_network" #fields depending on your environment
 }
+
 variable "segment_gateway_cidr" {
   type = string
 }
+
 variable "segment_start_ip_addr" {
   type = string
 }
+
 variable "segment_end_ip_addr" {
   type = string
 }
+
+variable "segment_vlan_id" {
+  type    = string
+}
+
+variable "segment_type" {
+  type    = string
+}
+
 variable "segment_gateway_dns1" {
   type    = string
   default = "8.8.8.8" #fields depending on your environment
 }
+
 variable "segment_gateway_dns2" {
   type    = string
   default = "8.8.8.8" #fields depending on your environment

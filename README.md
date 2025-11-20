@@ -25,7 +25,8 @@ provider_installation {
   direct {
     exclude = [
         "registry.terraform.io/vmware/vcd",
-        "registry.terraform.io/vmware/nsxt"
+        "registry.terraform.io/vmware/nsxt",
+        "registry.terraform.io/hashicorp/time"
     ]
   }
 }
@@ -38,24 +39,35 @@ root
     └── plugins
         └── registry.terraform.io
             └── vmware ## put providers under here
-                ├──nsxt ## this is provider nsxt
-                │  └── 3.14.0 ## version
-                │      └── linux_amd64 ## platform
-                │          ├── CHANGELOG.md
-                │          ├── LICENSE
-                │          ├── README.md
-                │          └── terraform-provider-nsxt_v3.10.0
-                └──vcd 
-                   └── 3.10.0
-                       └── linux_amd64
-                           ├── CHANGELOG.md
-                           ├── LICENSE
-                           ├── README.md
-                           └── terraform-provider-vcd_v3.14.0
+            │    ├──nsxt ## this is provider nsxt
+            │    │  └── 3.14.0 ## version
+            │    │      └── linux_amd64 ## platform
+            │    │          ├── CHANGELOG.md
+            │    │          ├── LICENSE
+            │    │          ├── README.md
+            │    │          └── terraform-provider-nsxt_v3.10.0
+            │    └──vcd 
+            │       └── 3.10.0
+            │           └── linux_amd64
+            │               ├── CHANGELOG.md
+            │               ├── LICENSE
+            │               ├── README.md
+            │               └── terraform-provider-vcd_v3.14.0
+            └── hashicorp
+                 └──time 
+                    └── 0.13.1
+                        └── linux_amd64
+                            ├── LICENSE
+                            └── terraform-provider-time_v0.13.1_x5
 ```
 ## list providers
 ```shell
 terraform providers
+```
+
+## add new providers
+```shell
+terraform init -upgrade
 ```
 
 ## Create resources
@@ -74,6 +86,5 @@ terraform destroy -auto-approve
 
 ## Remove the working dir cache
 ```shell
-rm -rf .terraform/ .terraform.lock.hcl terraform.tfstate 1111 terraform.tfstate.backup
-terraform init -upgrade
+rm -rf .terraform/ .terraform.lock.hcl terraform.tfstate terraform.tfstate.backup
 ```

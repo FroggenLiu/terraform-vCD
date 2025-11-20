@@ -8,6 +8,10 @@ terraform {
       source  = "vmware/nsxt"
       version = "3.10.0"
     }
+    time = {
+      source  = "hashicorp/time"
+      version = "0.13.1"
+    }
   }
 }
 
@@ -128,10 +132,10 @@ resource "vcd_nsxt_edgegateway" "t1" {
 }
 
 ######################################
-# 6. Create a network(segment).  NSX-T backend routed Org VDC network
+# 6-1. Creat a network(Overlay segment).  NSX-T backend routed Org VDC network
 ######################################
-resource "vcd_network_routed_v2" "routed_seg" {
-  for_each = { for v in var.org_vdcs : v.name => v }
+resource "vcd_network_routed_v2" "overlay_seg" {
+  for_each  = var.segment_type == "overlay" ? { for v in var.org_vdcs : v.name => v } : {}
 
   org             = var.org_name
   name            = "${var.org_name}-segment"
@@ -152,8 +156,109 @@ resource "vcd_network_routed_v2" "routed_seg" {
   ]
 }
 
+
 ######################################
-# 7. Create a vAPPs and attach segment
+# 6-2. Creat a network(VLAN segment) from NSX
+######################################
+######################################
+# 6-2. Creat a network(VLAN segment) from NSX
+######################################
+data "nsxt_policy_transport_zone" "vlan_tz" {
+  display_name  = var.vlan_transport_zone_name
+}
+
+
+resource "nsxt_policy_vlan_segment" "vlan_seg"{
+  for_each  = var.segment_type == "vlan" ? { for v in var.org_vdcs : v.name => v } : {}
+
+  display_name          = "${vcd_org.this.name}-Segment"
+  description           = "provisioned by terraform"
+  transport_zone_path   = data.nsxt_policy_transport_zone.vlan_tz.path
+  vlan_ids              = [ var.segment_vlan_id ]
+
+  subnet {
+    cidr = var.segment_gateway_cidr
+  }
+
+  depends_on  = [
+    vcd_nsxt_edgegateway.t1,
+    data.nsxt_policy_transport_zone.vlan_tz,
+  ]
+}
+
+
+######################################
+# 6-2-1. bind vlan segment to T1 interface
+######################################
+locals {
+  t1_id = { for k,v in  vcd_nsxt_edgegateway.t1 : k => split(":", v.id)[3] }
+}
+
+locals {
+  t1_interface_cidr = replace(var.segment_gateway_cidr, "^(\\d+\\.\\d+\\.\\d+)\\.\\d+(/\\d+)$", "$1.254$2")
+}
+
+data "nsxt_policy_tier1_gateway" "vlan_t1" {
+  for_each  = var.segment_type == "vlan" ? { for v in var.org_vdcs : v.name => v } : {}
+  display_name  = "${vcd_org.this.name}-T1-${local.t1_id[each.key]}"
+  id            = local.t1_id[each.key]
+
+  depends_on = [ vcd_nsxt_edgegateway.t1 ]
+}
+
+resource "nsxt_policy_tier1_gateway_interface" "t1_intf" {
+  for_each  = var.segment_type == "vlan" ? { for v in var.org_vdcs : v.name => v } : {}
+
+  display_name  = "${vcd_org.this.name}-Interface"
+  description   = "provisioned by terraform"
+  gateway_path  = data.nsxt_policy_tier1_gateway.vlan_t1[each.key].path
+  segment_path  = nsxt_policy_vlan_segment.vlan_seg[each.key].path
+  subnets        = [ local.t1_interface_cidr ]
+
+  depends_on  = [
+    nsxt_policy_vlan_segment.vlan_seg,
+    data.nsxt_policy_tier1_gateway.vlan_t1,
+    local.t1_interface_cidr
+  ]
+}
+
+######################################
+# 6-2-2. create network imported(vlan segment) from VCD
+######################################
+resource "vcd_nsxt_network_imported" "imported_seg" {
+  for_each  = var.segment_type == "vlan" ? { for v in var.org_vdcs : v.name => v } : {}
+
+  name                      = "${vcd_org.this.name}-Segment"
+  org                       = var.org_name
+  vdc                       = vcd_org_vdc.vdc[each.key].name
+  nsxt_logical_switch_name  = nsxt_policy_vlan_segment.vlan_seg[each.key].display_name
+#  owner_id                  = vcd_org_vdc.vdc[each.key].id
+  gateway                   = split("/", var.segment_gateway_cidr)[0]
+  prefix_length             = tonumber(split("/", var.segment_gateway_cidr)[1])
+
+  static_ip_pool {
+    start_address = var.segment_start_ip_addr
+    end_address   = var.segment_end_ip_addr
+  }
+
+  depends_on  = [
+    time_sleep.wait_for_vcd_sync_vlan_segment
+  ]
+}
+
+resource "time_sleep" "wait_for_vcd_sync_vlan_segment" {
+  for_each        = var.segment_type == "vlan" ? { for v in var.org_vdcs : v.name => v } : {}
+  create_duration = "30s"
+
+  depends_on = [
+    nsxt_policy_vlan_segment.vlan_seg,
+    nsxt_policy_tier1_gateway_interface.t1_intf
+  ]
+}
+
+
+######################################
+# 7. Creat a vAPPs and attach to orgVdcNetwork
 ######################################
 resource "vcd_vapp" "vapp" {
   for_each = { for v in var.org_vdcs : v.name => v }
@@ -170,8 +275,8 @@ resource "vcd_vapp" "vapp" {
     storage_lease_in_sec  = 0
   }
 
-    depends_on = [
-    vcd_org_vdc.vdc
+  depends_on = [
+    vcd_org_vdc.vdc,
   ]
 }
 
@@ -181,14 +286,42 @@ resource "vcd_vapp_org_network" "vapp_network" {
   org               = var.org_name
   vdc               = vcd_org_vdc.vdc[each.key].name
   vapp_name         = vcd_vapp.vapp[each.key].name
-  org_network_name  = vcd_network_routed_v2.routed_seg[each.key].name
+  org_network_name  = (
+    var.segment_type == "overlay" ? vcd_network_routed_v2.overlay_seg[each.key].name : vcd_nsxt_network_imported.imported_seg[each.key].name
+  )
+  depends_on = [
+    vcd_vapp.vapp,
+    time_sleep.wait_for_vcd_sync_vdcOrgNetwork
+  ]
+}
+
+resource "time_sleep" "wait_for_vcd_sync_vdcOrgNetwork" {
+  for_each        = var.segment_type == "vlan" ? { for v in var.org_vdcs : v.name => v } : {}
+  create_duration = "30s"
 
   depends_on = [
-    vcd_vapp.vapp
+    vcd_nsxt_network_imported.imported_seg
   ]
 }
 
 
+######################################
+# 6-2-2. ebable T1 route advertisment
+######################################
+
+# resource "nsxt_policy_tier1_gateway" "enable_t1_adv" {
+#   for_each  = var.segment_type == "vlan" ? { for v in var.org_vdcs : v.name => v } : {}
+#   display_name  = "${vcd_org.this.name}-T1-${local.t1_id[each.key]}"
+#   route_advertisement_types  = ["TIER1_CONNECTED"]
+
+#   lifecycle {
+#     ignore_changes = all
+#   }
+
+#   depends_on = [
+#     nsxt_policy_tier1_gateway_interface.t1_intf
+#   ]
+# }
 
 ######################################
 # Create a T1 gateway

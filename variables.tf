@@ -43,6 +43,23 @@ variable "segment_gateway_cidr" {
   }
 }
 
+variable "segment_vlan_id" {
+  type        = string
+  description = "Enter a VLAN ID for the VLAN segment. The VLAN ID must be between 105 and 150. Also, make sure the ID is not used by any other system."
+  validation {
+    condition     = (var.segment_type != "vlan") || (can(regex("^(10[5-9]|1[1-4][0-9]|150)$", var.segment_vlan_id)))
+    error_message = "VLAN ID must be between 105 and 150."
+  }
+}
+
+variable "segment_type" {
+  type        = string
+  description = "Enter a type of semgent. \"vlan\" or \"overlay\" is accepted only"
+  validation {
+    condition     = can(regex("^(vlan|overlay)$", var.segment_type))
+    error_message = "Segment type must be either 'vlan' or 'overlay'."
+  }
+}
 
 variable "orgs" {
   type = map(object({

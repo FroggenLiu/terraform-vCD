@@ -8,10 +8,15 @@ TERRAFORM-VCD/
 ├── variables.tf           # global + shared variables
 ├── terraform.tfvars       # actual variable values (like passwords, org names)
 └── modules/
-    └── org/
-        ├── main.tf        # logic to create Org, VDC, T1 gateway
-        ├── variables.tf   # declares module input variables
-        └── outputs.tf     # outputs IDs / paths to root
+│   └── org/
+│       ├── main.tf        # logic to create Org, VDC, T1 gateway
+│       ├── variables.tf   # declares module input variables
+│       └── outputs.tf     # outputs IDs / paths to root
+TERRAFORM-import-resource/ # update T1 attribute created by VCD, but update by NSXT(Managing Drift)
+├── main.tf                
+├── providers.tf           
+├── variables.tf           
+└── terraform.tfvars 
 ```
 
 
